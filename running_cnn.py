@@ -64,7 +64,7 @@ model.to(device)
 
 segCriterion = nn.BCEWithLogitsLoss() # Runs logits through sigmoid function then calculates binary cross entropy.
 distCriterion = nn.L1Loss() # Measures mean absolute error.
-distImportance = 0.3 # Relative importance of distCriterion.
+distImportance = 0.4 # Relative importance of distCriterion.
 
 optimiser = torch.optim.Adam(model.parameters(), lr=1e-4)
 
@@ -75,7 +75,7 @@ trainingData = {}
 # ---------------------------------- #
 # For reloading training checkpoints #
 # ---------------------------------- #
-checkpoint = torch.load('checkpoints/dw_seg_epoch_5.pth', map_location=device)
+checkpoint = torch.load('checkpoints/dw_seg_epoch_10.pth', map_location=device)
 model.load_state_dict(checkpoint['model_state'])
 optimiser.load_state_dict(checkpoint['optimizer_state'])
 startEpoch = checkpoint['epoch']  # Continue from next epoch
