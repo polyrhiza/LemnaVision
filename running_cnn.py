@@ -249,6 +249,8 @@ for epoch in range(51, 56):
 # ---------------- #
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model = UNet()
+model.to(device)
 
 for epoch in range(1, 11):
     print(f'Epoch: {epoch}')
@@ -312,6 +314,10 @@ for epoch in range(1, 11):
 # ------------------------------ #
 #   Get predictions for viewing  #
 # ------------------------------ #
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model = UNet()
+model.to(device)
 
 imgPath = ['training_data/patches/DSC_0447_padded_129.tif',
            'training_data/patches/DSC_0433_padded_170.tif',

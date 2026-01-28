@@ -71,6 +71,7 @@ def frond_counts(bmap):
 
     Returns
         frond_num (int): Number of fronds found.
+        bmap2 (numpy array): Array (x, y, 3) with fronds labeled.
     '''
     bmap = bmap.astype(np.uint) if bmap.dtype != np.uint8 else bmap
     bmap = (bmap*255).astype(np.uint8) if bmap.max() == 1 else bmap
@@ -94,5 +95,29 @@ def frond_counts(bmap):
 
     frond_num = int(np.max(np.unique(markers)))
 
-    return frond_num
+    bmap2 = cv2.cvtColor(bmap, cv2.COLOR_GRAY2BGR)
+
+    for frond in np.unique(markers):
+        if frond < 1:
+            continue
+
+        frond_mask = np.uint8(markers == frond)
+
+        M = cv2.moments(frond_mask)
+
+        if M['m00'] != 0:
+            cX = int(M['m10'] / M['m00']) # 'm10 is the sum of x coordinates 'm00' is the total number of pixels.
+            cy = int(M['m01'] / M['m00']) # 'm01' like above is the sum of all y coords.
+
+            cv2.putText(
+                bmap2,
+                text=str(frond),
+                org=(cX, cy),
+                color=(200,0,0),
+                fontFace = cv2.FONT_HERSHEY_PLAIN,
+                fontScale=0.7,
+                thickness=0
+            )
+
+    return frond_num, bmap2
 
