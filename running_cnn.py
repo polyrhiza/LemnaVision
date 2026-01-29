@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 from src.file_tools import load_paths, pad_images, patching, stratified_train_test_split
 from src.cnn_tools import UNet, PatchDataset, precision, dice, get_predictions
+from src.img_tools import frond_counts
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -9,6 +10,7 @@ import matplotlib.pyplot as plt
 import os
 import re
 from natsort import natsorted
+import yaml
 
 
 jpgPaths, bmapPaths = \
@@ -311,9 +313,9 @@ for epoch in range(1, 11):
 
 
 
-# ------------------------------ #
-#   Get predictions for viewing  #
-# ------------------------------ #
+# ------------------------------------------- #
+#   Get predictions for viewing across epochs #
+# ------------------------------------------- #
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = UNet()
@@ -425,4 +427,61 @@ ax[1].plot(range(1, len(fileList)+1), valDistLoss)
 plt.plot()
 
 
-    
+
+# -------------------------------------- #
+#    Patch and predict then reconnect    #
+# -------------------------------------- #
+
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+model = UNet()
+model.to(device)
+
+imgPath = ['./training_data/padded/DSC_0352_padded.tif']
+bmapPath = ['./training_data/padded/DSC_0352_BMAP_padded.tif']
+savePath = './testing'
+
+jpgPatch, bmapPatch, coords = patching(imgPath, bmapPath,savePath)
+
+testSet = PatchDataset(
+    jpgPatch,
+    bmapPatch,
+    augment=False
+)
+
+testLoader = DataLoader(
+    testSet,
+    batch_size = 1,
+    shuffle=False,
+    num_workers=0
+)
+
+epoch = 55
+
+checkpoint = torch.load(f'checkpoints/dw_seg_epoch_{epoch}.pth', map_location=device)
+model.load_state_dict(checkpoint['model_state'])
+model.eval()
+
+preds = []
+
+with torch.no_grad():
+
+    for i, (img, bmap, distMap) in enumerate(testLoader):
+
+        img = img.to(device)
+        seg, dist = model(img)
+        pred = get_predictions(seg)
+        preds.append(pred[0].squeeze(0))
+        
+
+cols = 20
+rows = []
+
+for i in range(0, len(preds), cols):
+    row = np.concatenate(preds[i:i+cols], axis=1)
+    rows.append(row)
+
+final_img = np.concatenate(rows, axis=0)
+
+
+frond_num, counted_img = frond_counts(final_img)

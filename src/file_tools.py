@@ -4,7 +4,7 @@ import re
 import cv2
 import torchvision as T
 
-folder = 'training_data/padded'
+# folder = 'training_data/originals'
 
 def load_paths(folder):
     '''
@@ -20,8 +20,9 @@ def load_paths(folder):
     jpgPaths = []
     bmapPaths = []
     for i in os.listdir(folder):
+
         
-        path = os.path.join(folder, i) # Get full path. Required for os.path.isfile/isdir.
+        path = os.path.join(folder, i)
 
         if os.path.isdir(path): # Check if what is inside the given folder is another folder.
             for j in os.listdir(path):
@@ -54,7 +55,6 @@ def load_paths(folder):
     bmapPaths = sorted(bmapPaths)
 
     return jpgPaths, bmapPaths
-
 
 
 
