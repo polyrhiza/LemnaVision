@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
-from src.file_tools import load_paths, pad_images, patching, stratified_train_test_split
-from src.cnn_tools import UNet, PatchDataset, precision, dice, get_predictions
-from src.img_tools import frond_counts
+from src.file_tools import load_paths, stratified_train_test_split
+from src.cnn_tools import UNet, PatchDataset, InferenceDataset,  precision, dice, get_predictions
+from src.img_tools import frond_counts, watershed, pad_images, patching
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -13,8 +13,9 @@ from natsort import natsorted
 import yaml
 
 
-jpgPaths, bmapPaths = \
+jpgPaths, bmapPaths =\
     load_paths('training_data/originals')
+
 
 paddedJpgs, paddedBmaps = \
     pad_images(jpgPaths=jpgPaths,
@@ -68,16 +69,17 @@ model.to(device)
 
 segCriterion = nn.BCEWithLogitsLoss() # Runs logits through sigmoid function then calculates binary cross entropy.
 distCriterion = nn.L1Loss() # Measures mean absolute error.
-distImportance = 0.8 # Relative importance of distCriterion. CHANGED AT 50
+distImportance = 0.5 # Relative importance of distCriterion.
 
 optimiser = torch.optim.Adam(model.parameters(), lr=1e-4)
 
+# From epoch 70 onwards I'm doing self training on an extra 109 images.
 trainingData = {}
 
 # ---------------------------------- #
 # For reloading training checkpoints #
 # ---------------------------------- #
-checkpoint = torch.load('checkpoints/dw_seg_epoch_50.pth', map_location=device)
+checkpoint = torch.load('checkpoints/dw_seg_epoch_70.pth', map_location=device)
 model.load_state_dict(checkpoint['model_state'])
 optimiser.load_state_dict(checkpoint['optimizer_state'])
 trainingData = checkpoint.get('trainingData', {})
@@ -86,7 +88,7 @@ trainingData = checkpoint.get('trainingData', {})
 #   Train-Validation Loop     #
 # --------------------------- #
 
-for epoch in range(51, 56):
+for epoch in range(50, 101):
 
     # ---------- #
     #  TRAINING  #
@@ -344,7 +346,7 @@ testLoader = DataLoader(
 preds = [[] for _ in range(3)]
 imgs = [cv2.imread(img) for img in imgPath]
 
-epochs = [1, 25, 55]
+epochs = [1, 55, 70]
 
 for epoch in epochs:
 
@@ -357,7 +359,7 @@ for epoch in epochs:
         for i, (img, bmap, distMap) in enumerate(testLoader):
             img = img.to(device)
             seg, dist = model(img)
-            pred = get_predictions(seg)
+            pred = get_predictions(seg, threshold=0.9)
             preds[i].append(pred[0].squeeze(0))
             
 
@@ -393,20 +395,24 @@ trainPrecision = []
 trainDice = []
 trainSegLoss = []
 trainDistLoss = []
+trainLoss = []
 
 valPrecision = []
 valDice = []
 valSegLoss = []
 valDistLoss = []
+valLoss = []
 
 for i in fileList:
     checkpoint = torch.load(i)
     trainingData = checkpoint['trainingData']
+    trainLoss.append(trainingData['train_loss'])
     trainSegLoss.append(trainingData['train_seg_loss'])
     trainDistLoss.append(trainingData['train_dist_loss'])
     trainDice.append(trainingData['train_dice'])
     trainPrecision.append(trainingData['train_precision'])
 
+    valLoss.append(trainingData['val_loss'])
     valSegLoss.append(trainingData['val_seg_loss'])
     valDistLoss.append(trainingData['val_dist_loss'])
     valPrecision.append(trainingData['val_precision'])
@@ -414,22 +420,24 @@ for i in fileList:
         
 fig, ax = plt.subplots(1, 2)
 
-ax[0].plot(range(1, len(fileList)+1), trainSegLoss)
-ax[0].plot(range(1, len(fileList)+1), trainDistLoss)
-# ax[0].plot(range(1, len(fileList)+1), trainDice)
+
+# ax[0].plot(range(1, len(fileList)+1), trainLoss)
+# ax[0].plot(range(1, len(fileList)+1), trainSegLoss)
+# ax[0].plot(range(1, len(fileList)+1), trainDistLoss)
+ax[0].plot(range(1, len(fileList)+1), trainDice)
 # ax[0].plot(range(1, len(fileList)+1), trainPrecision)
 
-ax[1].plot(range(1, len(fileList)+1), valSegLoss)
-ax[1].plot(range(1, len(fileList)+1), valDistLoss)
-# ax[1].plot(range(1, len(fileList)+1), valDice)
+# ax[1].plot(range(1, len(fileList)+1), valLoss)
+# ax[1].plot(range(1, len(fileList)+1), valSegLoss)
+# ax[1].plot(range(1, len(fileList)+1), valDistLoss)
+ax[1].plot(range(1, len(fileList)+1), valDice)
 # ax[1].plot(range(1, len(fileList)+1), valPrecision)
 
 plt.plot()
 
 
-
 # -------------------------------------- #
-#    Patch and predict then reconnect    #
+#               Inference                #
 # -------------------------------------- #
 
 
@@ -437,42 +445,45 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = UNet()
 model.to(device)
 
-imgPath = ['./training_data/padded/DSC_0352_padded.tif']
-bmapPath = ['./training_data/padded/DSC_0352_BMAP_padded.tif']
-savePath = './testing'
+with open('patchedJpgs.txt') as f:
+    jpgPaths = [line.strip() for line in f]
 
-jpgPatch, bmapPatch, coords = patching(imgPath, bmapPath,savePath)
-
-testSet = PatchDataset(
-    jpgPatch,
-    bmapPatch,
-    augment=False
-)
+testSet = InferenceDataset(jpgPaths)
 
 testLoader = DataLoader(
     testSet,
-    batch_size = 1,
+    batch_size = 8,
     shuffle=False,
     num_workers=0
 )
 
-epoch = 55
-
+epoch = 70
 checkpoint = torch.load(f'checkpoints/dw_seg_epoch_{epoch}.pth', map_location=device)
 model.load_state_dict(checkpoint['model_state'])
 model.eval()
 
-preds = []
 
 with torch.no_grad():
 
-    for i, (img, bmap, distMap) in enumerate(testLoader):
+    for img, imgPath in testLoader:
 
         img = img.to(device)
         seg, dist = model(img)
-        pred = get_predictions(seg)
-        preds.append(pred[0].squeeze(0))
+        preds=get_predictions(seg, threshold=0.8)
+
+        for p, path in zip(preds, imgPath):
+            p = p.squeeze(0) * 255
+
+            split = path.split('_')
+            split.insert(3, 'BMAP')
+            sep = '_'
+            joined = sep.join(split)
+            ok = cv2.imwrite(joined, p)
+            if not ok:
+                raise RuntimeError(f'Failed to save {joined}')
+
         
+
 
 cols = 20
 rows = []
@@ -483,5 +494,7 @@ for i in range(0, len(preds), cols):
 
 final_img = np.concatenate(rows, axis=0)
 
+ws_bmap = watershed(final_img)
+frond_num, counted_img = frond_counts(ws_bmap)
 
-frond_num, counted_img = frond_counts(final_img)
+

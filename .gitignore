@@ -2,6 +2,7 @@ training_data/
 __pycache__/
 checkpoints/
 testing/
+old_checkpoints/
 *.TIF
 *.tif
 *.NEF

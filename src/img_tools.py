@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import os
 
 
 def watershed(bmap):
@@ -120,4 +121,138 @@ def frond_counts(bmap):
             )
 
     return frond_num, bmap2
+
+
+
+def pad_images(jpgPaths, bmapPaths=None, savePath=None, patchSize=256):
+
+    '''
+    Method for padding training images from given paths and saving them out.
+    
+    jpgs: List of image arrays of size x, y, 3
+    bmaps: List of binary map arrays of size x, y
+    savePath
+    patchsize: Size you want to patch. Default is 256.
+
+    Returns: Paths to newly padded images and binary maps.
+    '''   
+    
+    # assert len(jpgPaths) == len(bmapPaths)
+
+    os.makedirs(savePath, exist_ok=True)
+
+    paddedJpgPaths = []
+    paddedBmapPaths = []
+
+    for i in range(len(jpgPaths)):
+
+        jpg = cv2.imread(jpgPaths[i])
+        if bmapPaths != None:
+            bmap = cv2.imread(bmapPaths[i], cv2.IMREAD_GRAYSCALE)
+        
+        h, w , c = jpg.shape
+        pad_h = (patchSize - h % patchSize) % patchSize
+        pad_w = (patchSize - w % patchSize) % patchSize
+
+        jpgPadded = cv2.copyMakeBorder(
+            jpg,
+            top=pad_h,
+            bottom=0,
+            left=0,
+            right=pad_w,
+            borderType=cv2.BORDER_CONSTANT,
+            value=(0,0,0)
+        )
+        if bmapPaths != None:
+            bmapPadded = cv2.copyMakeBorder(
+                bmap,
+                top=pad_h,
+                bottom=0,
+                left=0,
+                right=pad_w,
+                borderType=cv2.BORDER_CONSTANT,
+                value=0
+                )
+        
+        jpgName, ext = os.path.splitext(os.path.basename(jpgPaths[i]))
+        if bmapPaths != None:
+            bmapName, ext = os.path.splitext(os.path.basename(bmapPaths[i]))
+
+        jpgPath = f'{savePath}/{jpgName}_padded.tif'
+        if bmapPaths != None:
+            bmapPath = f'{savePath}/{bmapName}_padded.tif'
+
+        cv2.imwrite(jpgPath, jpgPadded)
+        if bmapPaths != None:
+            cv2.imwrite(bmapPath, bmapPadded)
+
+        paddedJpgPaths.append(jpgPath)
+        if bmapPaths != None:
+            paddedBmapPaths.append(bmapPath)
+
+    if bmapPaths != None:
+        return paddedJpgPaths, paddedBmapPaths
+    else:
+        return paddedJpgPaths
+
+
+
+def patching(jpgPaths, savePath, bmapPaths=None, patchSize=256):
+
+    '''
+    Method for patching training data to desired size.
+    
+    jpgs: List of paths for jpg images
+    bmaps: List of binary map paths
+    patchsize: Size you want to patch. Default is 256.
+    '''
+
+    # assert len(jpgPaths) == len(bmapPaths)
+    
+    os.makedirs(savePath, exist_ok=True)
+
+    jpgPatchPaths = []
+    bmapPatchPaths = []
+    coords = []
+    
+
+    for i in range(len(jpgPaths)):
+        num = 0
+
+        jpg = cv2.imread(jpgPaths[i])
+        if bmapPaths != None:
+            bmap = cv2.imread(bmapPaths[i], cv2.IMREAD_GRAYSCALE)
+
+        jpgName, ext = os.path.splitext(os.path.basename(jpgPaths[i]))
+        if bmapPaths != None:
+            bmapName, ext = os.path.splitext(os.path.basename(bmapPaths[i]))
+
+        h, w , c = jpg.shape
+
+        for y in range (0, h, patchSize):
+            for x in range(0, w, patchSize):
+                jpgPatch = jpg[y: y+patchSize, x:x+patchSize]
+                if bmapPaths != None:                
+                    bmapPatch = bmap[y: y+patchSize, x:x+patchSize]
+
+                jpgPath = f'{savePath}/{jpgName}_{num}.tif'
+                if bmapPaths != None:
+                    bmapPath = f'{savePath}/{bmapName}_{num}.tif'
+
+                cv2.imwrite(jpgPath, jpgPatch)
+                if bmapPaths != None:
+                    cv2.imwrite(bmapPath, bmapPatch)
+                
+                jpgPatchPaths.append(jpgPath)
+                if bmapPaths != None:
+                    bmapPatchPaths.append(bmapPath)
+                coords.append((x, y))
+
+                num += 1
+
+    if bmapPaths != None:
+        return jpgPatchPaths, bmapPatchPaths, coords
+    else:
+        return jpgPatchPaths
+
 

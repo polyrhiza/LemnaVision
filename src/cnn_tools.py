@@ -41,6 +41,8 @@ def blur_augmentation(img, p=0.5):
     k = np.random.choice([3,5])
     return cv2.GaussianBlur(img, (k,k), 0)
 
+
+
 def get_predictions(logits, threshold = 0.5, output='numpy'):
     '''
     Function that converts predictions to binary maps.
@@ -62,10 +64,11 @@ def get_predictions(logits, threshold = 0.5, output='numpy'):
     
 
 ##############################
-#           DATASET          #
+#           DATASETS         #
 ##############################
 
 class PatchDataset(Dataset):
+
     def __init__(self, imgPaths, bmapPaths, augment=False):
         super().__init__()
 
@@ -113,6 +116,27 @@ class PatchDataset(Dataset):
         img = torch.from_numpy(img).permute(2, 0, 1) 
 
         return img, bmap, distMap
+    
+
+class InferenceDataset(Dataset):
+    def __init__(self, imgPaths):
+        super().__init__()
+
+        self.imgPaths = imgPaths
+
+    def __len__(self):
+        return len(self.imgPaths)
+
+    def __getitem__(self,index):
+        img = cv2.imread(self.imgPaths[index])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = img.astype(np.float32) / 255.0
+        img = torch.from_numpy(img).permute(2, 0, 1)
+        return img, self.imgPaths[index]
+
+
+
+        
 
 ##############################
 #          METRICS           #
