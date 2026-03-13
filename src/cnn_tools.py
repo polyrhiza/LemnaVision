@@ -50,7 +50,7 @@ def get_predictions(logits, threshold = 0.5, output='numpy'):
     Args:
         logits: Logit prediction returned from model().
         threshold: Probability threshold. Default is 0.5.
-        output (numpy, tensor): Dtype to return. Default is numpy.
+        output (numpy array, tensor): Dtype to return. Default is numpy.
     '''
     probs = torch.sigmoid(logits)
     preds = (probs > threshold)
@@ -133,10 +133,6 @@ class InferenceDataset(Dataset):
         img = img.astype(np.float32) / 255.0
         img = torch.from_numpy(img).permute(2, 0, 1)
         return img, self.imgPaths[index]
-
-
-
-        
 
 ##############################
 #          METRICS           #

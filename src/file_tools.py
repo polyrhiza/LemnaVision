@@ -4,11 +4,11 @@ import re
 import cv2
 import torchvision as T
 
-folder = 'training_data/originals'
+# folder = 'training_data/originals'
 
 def load_paths(folder):
     '''
-    Method for getting paths top matching jpgs and binary maps.
+    Method for getting paths to matching jpgs and binary maps.
     
     folder: required to be a folder with folders within, each folder
             containing images and binary maps within.
@@ -31,7 +31,7 @@ def load_paths(folder):
                 elif os.path.isfile(os.path.join(path, j)) and not re.search(r'BMAP', j) and j.endswith('.JPG'):
                     jpgPaths.append(os.path.join(path, j))
         
-        if os.path.isfile(path): # Check what is inside given folder is a file.
+        if os.path.isfile(path): # Check if what is inside given folder is a file.
             if re.search(r'BMAP', i):
                 bmapPaths.append(path)
             elif os.path.isfile(path) and not re.search(r'BMAP', i):

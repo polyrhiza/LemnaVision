@@ -62,18 +62,15 @@ valLoader = DataLoader(
 )
 
 model = UNet()
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 model.to(device)
-
 segCriterion = nn.BCEWithLogitsLoss() # Runs logits through sigmoid function then calculates binary cross entropy.
 distCriterion = nn.L1Loss() # Measures mean absolute error.
-distImportance = 0.5 # Relative importance of distCriterion.
+distImportance = 0.2
 
 optimiser = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-# From epoch 70 onwards I'm doing self training on an extra 109 images.
+
 trainingData = {}
 
 # ---------------------------------- #
@@ -481,9 +478,6 @@ with torch.no_grad():
             ok = cv2.imwrite(joined, p)
             if not ok:
                 raise RuntimeError(f'Failed to save {joined}')
-
-        
-
 
 cols = 20
 rows = []
