@@ -5,7 +5,7 @@
 |    |__\  ___/|  Y Y  \   |  \/ __ \\     /  |  |\___ \|  (  <_> )   |  \    
 |_______ \___  >__|_|  /___|  (____  /\___/   |__/____  >__|\____/|___|  /     
         \/   \/      \/     \/     \/                 \/               \/         
-
+'''
 Welcome to LemnaVision! 
 
 A light-weight convolutional neural network (CNN) for transforming images of duckweed into a binary maps, allowing you to calculate
