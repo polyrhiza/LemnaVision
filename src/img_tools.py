@@ -85,7 +85,7 @@ def frond_counts(bmap):
 
     _, sure_fg = cv2.threshold(
             distmap,
-            0.3 * distmap.max(),
+            0.2 * distmap.max(),
             255,
             0
     )

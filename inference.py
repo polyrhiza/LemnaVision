@@ -127,7 +127,7 @@ def predict(padded_img, img_path, model=UNet(), patch_size=256):
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model = model
-        model.load_state_dict(torch.load('./weights/weights.pth'))
+        model.load_state_dict(torch.load('./weights/weights.pth', map_location=device))
         model.eval()
         model.to(device)
 
@@ -169,15 +169,20 @@ def predict(padded_img, img_path, model=UNet(), patch_size=256):
         print(f'Inference complete!')
         print(f'Lemnaceae binary map saved to {save_path}.')
 
-    return f'{save_path}/{img_name}_predicted_bmap.tif'
+    return f'{save_path}/{img_name}_predicted_bmap.tif', save_path, img_name
 
 # ----------------------------------------------------------- #
 
-def frond_counting(predicted_path):
-    pass
+def frond_counting(predicted_path, save_path, img_name):
+    print('Starting frond counting!')
+    img = cv2.imread(predicted_path, cv2.IMREAD_GRAYSCALE)
+    frond_num, counted_img = frond_counts(img)
+    tprint(f'{str(frond_num)}     fronds!')
+    cv2.imwrite(f'{save_path}/{img_name}_counted.tif', counted_img)
 
         
 img, img_path = get_user_img()
 padded_img = pad_img(img)
-predicted_path = predict(padded_img, img_path)
+predicted_path, save_path, img_name = predict(padded_img, img_path)
+frond_counting(predicted_path, save_path, img_name)
 

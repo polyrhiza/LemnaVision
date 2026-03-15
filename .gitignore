@@ -1,10 +1,12 @@
 training_data/
 __pycache__/
 checkpoints/
-testing/
-old_checkpoints/
+train
 *.TIF
 *.tif
 *.NEF
 *.JPG
 test.JPG
+running_cnn.py
+training_loop.py
+code
