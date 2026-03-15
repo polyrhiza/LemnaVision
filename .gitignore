@@ -1,6 +1,7 @@
 training_data/
 __pycache__/
 checkpoints/
+.vscode/
 train
 *.TIF
 *.tif
@@ -9,4 +10,4 @@ train
 test.JPG
 running_cnn.py
 training_loop.py
-code
+.gitignore
