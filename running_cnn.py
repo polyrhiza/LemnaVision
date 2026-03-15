@@ -85,7 +85,7 @@ trainingData = checkpoint.get('trainingData', {})
 #   Train-Validation Loop     #
 # --------------------------- #
 
-for epoch in range(50, 101):
+for epoch in range(0, 100):
 
     # ---------- #
     #  TRAINING  #
@@ -374,11 +374,9 @@ for row in range(0,3):
 plt.tight_layout()
 plt.show()
 
-
 # ------------------------------ #
 #     Graph loss and metrics     #
 # ------------------------------ #
-
 
 fileList = []
 for root, dir, file in os.walk('./checkpoints/'):
@@ -386,6 +384,7 @@ for root, dir, file in os.walk('./checkpoints/'):
         fileList.append(os.path.join(root, i))
 
 fileList = natsorted(fileList)
+fileList.remove('./checkpoints/.gitkeep')
 
 
 trainPrecision = []
@@ -420,14 +419,14 @@ fig, ax = plt.subplots(1, 2)
 
 # ax[0].plot(range(1, len(fileList)+1), trainLoss)
 # ax[0].plot(range(1, len(fileList)+1), trainSegLoss)
-# ax[0].plot(range(1, len(fileList)+1), trainDistLoss)
-ax[0].plot(range(1, len(fileList)+1), trainDice)
+ax[0].plot(range(1, len(fileList)+1), trainDistLoss)
+# ax[0].plot(range(1, len(fileList)+1), trainDice)
 # ax[0].plot(range(1, len(fileList)+1), trainPrecision)
 
 # ax[1].plot(range(1, len(fileList)+1), valLoss)
 # ax[1].plot(range(1, len(fileList)+1), valSegLoss)
-# ax[1].plot(range(1, len(fileList)+1), valDistLoss)
-ax[1].plot(range(1, len(fileList)+1), valDice)
+ax[1].plot(range(1, len(fileList)+1), valDistLoss)
+# ax[1].plot(range(1, len(fileList)+1), valDice)
 # ax[1].plot(range(1, len(fileList)+1), valPrecision)
 
 plt.plot()

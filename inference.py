@@ -1,11 +1,11 @@
 import cv2
-# import numpy as np
+import numpy as np
 from src.cnn_tools import UNet, InferenceDataset, get_predictions
 from src.img_tools import frond_counts
 import torch
-# import torch.nn as nn
 from torch.utils.data import DataLoader
 import os, tempfile
+from art import *
 
 art = r"""                 
 .____                              ____   ____.__       .__                          
@@ -74,11 +74,11 @@ def pad_img(img, patch_size=256):
 
 # ----------------------------------------------------------- #
 
-def predict(padded_img, img_path, model=UNet patch_size=256):
+def predict(padded_img, img_path, model=UNet(), patch_size=256):
     ''' 
     '''
     with tempfile.TemporaryDirectory() as tmpdir:
-        print('Created temp directory.')
+        print('Created temp directory. All temporary files will be removed.')
 
         patch_size=patch_size
 
@@ -108,8 +108,13 @@ def predict(padded_img, img_path, model=UNet patch_size=256):
                 coords.append((x, y))
 
                 num += 1
-
+                
+                print(f'Temporary patch stored at {write_path}.')
+        print('-----------------------------------------')
         print(f'Patching complete. {num} patches created.')
+        print('Moving to Lemnaeae patch prediction.')
+        print('-----------------------------------------')
+
         
         inference_set  = InferenceDataset(patched_paths)
 
@@ -122,24 +127,57 @@ def predict(padded_img, img_path, model=UNet patch_size=256):
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model = model
-        model.load_state_dict(torch.load('./weights/LemnaVision_wights.pth'))
+        model.load_state_dict(torch.load('./weights/weights.pth'))
         model.eval()
         model.to(device)
 
+
         with torch.no_grad():
-            for img, _ in inference_loader():
+            pred_paths = []
+            for num, (img, path) in enumerate(inference_loader):
+                path = path[0]
+            
                 img = img.to(device)
                 seg, dist = model(img)
+
                 preds = get_predictions(seg, threshold=0.8)
+                p = (preds.squeeze() * 255.0).astype(np.uint8)
+                
+                pred_path = os.path.dirname(path)
+                pred_path = f'{pred_path}/{img_name}_pred_{num}.tif'
+                pred_paths.append(pred_path)
+                cv2.imwrite(pred_path, p)
 
-                for p in preds:
-                    p = p.squeeze(0) * 255.0
+                print(f'Temporary patch prediction saved at {pred_path} with unique values {np.unique(p)}.')
             
+            print('---------------------------------')
+            print('Finished predicting patches.')
+            print('Stiching predicted patches.')
+            print('---------------------------------')
 
+        full_predict = np.zeros((h, w), dtype=np.uint8)
 
+        for pred_path, patch_coords in zip(pred_paths, coords):
+            print(f'pred path: {pred_path}')
+            print(f'patch coords: {patch_coords}')
+            print('---------------------------------')
+            patch = cv2.imread(pred_path, cv2.IMREAD_GRAYSCALE)
+            x, y = patch_coords
+            full_predict[y:y+patch_size, x:x+patch_size] = patch
+
+        cv2.imwrite(f'{save_path}/{img_name}_predicted_bmap.tif', full_predict)
+        print(f'Inference complete!')
+        print(f'Lemnaceae binary map saved to {save_path}.')
+
+    return f'{save_path}/{img_name}_predicted_bmap.tif'
+
+# ----------------------------------------------------------- #
+
+def frond_counting(predicted_path):
+    pass
 
         
-
-
-
+img, img_path = get_user_img()
+padded_img = pad_img(img)
+predicted_path = predict(padded_img, img_path)
 
