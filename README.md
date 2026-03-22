@@ -50,6 +50,7 @@ or on windows:
 <h6>Using conda env:</h6>
 
 `conda create -n LemnaVision python=3.14`
+
 `conda activate LemnaVision`
 
 
