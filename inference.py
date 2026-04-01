@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from src.cnn_tools import UNet, InferenceDataset, get_predictions
-from src.img_tools import frond_counts
+from src.img_tools import frond_counts, frond_counts_with_ws
 import torch
 from torch.utils.data import DataLoader
 import os, tempfile
