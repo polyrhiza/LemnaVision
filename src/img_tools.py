@@ -14,8 +14,10 @@ def watershed(bmap):
         ws_bmap (array, uint8): Newly watershed binary map.
 
     '''
-    bmap = bmap.astype(np.uint) if bmap.dtype != np.uint8 else bmap
-    bmap = (bmap*255).astype(np.uint8) if bmap.max() == 1 else bmap
+    if bmap.max() == 1:
+        bmap = (bmap * 255).astype(np.uint8)
+    else:
+        bmap = bmap.astype(np.uint8)
 
     kernel = np.ones(
         (3,3),
@@ -74,7 +76,7 @@ def frond_counts(bmap):
         frond_num (int): Number of fronds found.
         bmap2 (numpy array): Array (x, y, 3) with fronds labeled.
     '''
-    bmap = bmap.astype(np.uint) if bmap.dtype != np.uint8 else bmap
+    bmap = bmap.astype(np.uint8) if bmap.dtype != np.uint8 else bmap
     bmap = (bmap*255).astype(np.uint8) if bmap.max() == 1 else bmap
 
     distmap = cv2.distanceTransform(
@@ -122,6 +124,96 @@ def frond_counts(bmap):
 
     return frond_num, bmap2
 
+def frond_counts_with_ws(bmap):
+    '''
+    Counts the number of fronds with watershedding.
+    Inference from the U-Net model is accurate enough
+    that watershedding for frond counts is uneccessary.
+    However, the function is here if needed.
+    
+    Arguments
+        bmap (numpy array): Binary map returned from CNN.
+
+    Returns
+        frond_num (int): Number of fronds found.
+        bmap2 (numpy array): Array (x, y, 3) with fronds labeled.
+    '''
+
+    if bmap.max() == 1:
+        bmap = (bmap * 255).astype(np.uint8)
+    else:
+        bmap = bmap.astype(np.uint8)
+
+    kernel = np.ones(
+        (3,3),
+        np.uint8
+    )
+
+    sure_bg = cv2.dilate(
+        bmap,
+        kernel,
+        iterations=3
+    )
+
+    distmap = cv2.distanceTransform(
+            bmap,
+            cv2.DIST_L2,
+            cv2.DIST_MASK_PRECISE
+    )
+
+    _, sure_fg = cv2.threshold(
+            distmap,
+            0.3 * distmap.max(),
+            255,
+            0
+    )
+
+    sure_fg = np.uint8(sure_fg)
+
+    unknown = cv2.subtract(sure_bg, sure_fg)
+
+    _, markers = cv2.connectedComponents(sure_fg)
+    markers += 1
+    markers[unknown==255] = 0
+
+    labels = cv2.watershed(
+        cv2.cvtColor(bmap, cv2.COLOR_GRAY2BGR),
+        markers
+    )
+
+    unique_labels = np.unique(labels) # after watershed -1 is boundry areas between fronds and 1 is the sure background
+    frond_ids = [i for i in unique_labels if i > 1]
+    frond_num = len(frond_ids)
+
+    bmap2 = cv2.cvtColor(bmap, cv2.COLOR_GRAY2BGR)
+
+    # Note to self: I'm fucking confused on what I've written here.
+    # Yes code should explain itself but cv2 is comlpicated and you'll
+    # forget what the args and outputs of functions are.
+    # Coding drunk doesn't help you maniac.
+    for i, frond_id in enumerate(frond_ids):
+            # Create a mask for just this one frond
+            frond_mask = np.uint8(labels == frond_id)
+
+            M = cv2.moments(frond_mask)
+            if M['m00'] != 0:
+                cX = int(M['m10'] / M['m00'])
+                cY = int(M['m01'] / M['m00'])
+
+                cv2.putText(
+                    bmap2,
+                    text=str(i + 1),
+                    org=(cX, cY),
+                    color=(200, 0, 0),
+                    fontFace=cv2.FONT_HERSHEY_PLAIN,
+                    fontScale=0.7,
+                    thickness=0
+                )
+
+    return frond_num, bmap2
+
+def count_positive_pixels(bmap):
+    pass
 
 
 def pad_images(jpgPaths, bmapPaths=None, savePath=None, patchSize=256):
