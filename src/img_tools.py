@@ -187,10 +187,6 @@ def frond_counts_with_ws(bmap):
 
     bmap2 = cv2.cvtColor(bmap, cv2.COLOR_GRAY2BGR)
 
-    # Note to self: I'm fucking confused on what I've written here.
-    # Yes code should explain itself but cv2 is comlpicated and you'll
-    # forget what the args and outputs of functions are.
-    # Coding drunk doesn't help you maniac.
     for i, frond_id in enumerate(frond_ids):
             # Create a mask for just this one frond
             frond_mask = np.uint8(labels == frond_id)
@@ -212,9 +208,36 @@ def frond_counts_with_ws(bmap):
 
     return frond_num, bmap2
 
-def count_positive_pixels(bmap):
-    pass
 
+def positive_percentage(bmap):
+    '''
+    Go through array and count number of positive pixels then
+    divide by total number of pixels.
+
+    Arguments:
+        bmap (numpy array): Binary map returned from CNN.
+
+    Returns:
+        pos_per (float): Number of positive pixels.
+
+    '''
+    num = np.count_nonzero(bmap==255)
+    total = bmap.size
+    pos_per = num/total
+
+    return pos_per
+
+
+def calculate_area(cm, pos_per, bmap):
+    '''
+    Take how many pixels are in a cm (measured in imagej)
+    and calculate the total area and frond area.
+
+    '''
+    total = (bmap.shape[0]/cm) * (bmap.shape[1]/cm)
+    frond_area = total * pos_per
+
+    return frond_area
 
 def pad_images(jpgPaths, bmapPaths=None, savePath=None, patchSize=256):
 
