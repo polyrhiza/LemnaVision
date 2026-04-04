@@ -14,21 +14,31 @@
 <h4>About</h4>
 
 
-LemnaVision is a light-weight convolutional neural network (CNN), utilisng a reduced U-Net architecture for transforming images of duckweed into binary maps. Forther allowing frond counts and area calculations.
+LemnaVision is a light-weight convolutional neural network (CNN), utilisng a doubled-headed U-Net architecture for transforming images of duckweed into binary maps. These binary maps allow for accurate frond counting and area calculations, which are built into the program.
 
-A frond is determined as an individual only when it has been seperated from the mother frond. This is to standardise counting and simply model inference.
+Model weights are provided, which can be personally trained for niche use cases. A training module is planned for future release to enable those unfamiliar with Python or PyTorch to train the model.
 
-Model inference is set up to use the CPU, but only due to the version of pytorch specified in the requirements.txt (GPU is supported in the code base). If your system has a GPU and you're fimilar with python, install a CUDA version of pytorch instead. This will dramatically reduce inference time.
+<h4>How it works</h4>
 
-The weights and model are provided for further personal training for niche use cases, although, the aim is to continuely training data to work for all duckweed species used for scientific experiments, and continuously update both here. Currently, the model was trained on 92 manually segmented <i>Lemna minuta</i> images (well over 5000 individual fronds). Model inference will work best on images taken approximately 10 < x < 30 cm above duckweed, with a light background.
+The model is trained on 92 manually segmented <i>Lemna minuta</i> plates. A frond is only defined as an individual if it is a seperate object. For example, a grouping of a mother, daughter and granddaughter frond, connected via their meristems will be counted as a single frond. This creates a standardised approach that removes the confusion of whether or not to count newly birthed tiny daughter fronds. This approach is common in the litterature. Furthermore, it simplies what the model needs to learn.
 
-This is the first release so I'm looking for feedback! 
-If you get any issues please report them in the issues tab.
+Ground truth binary maps are specifically segmented to emphasise gaps between individuals, including overlapping fronds. This is what allows post-process frond counting, which is done using connected-component analysis.
 
+Total duckweed area is calculated based on the number of pixels in a cm. This needs to be calculated prior to running the model. I suggest including a ruler at media level in your image and calculate using imageJ. Briefly, select the line tool, draw a line on your ruler measuring 1 cm and press   ctrl+m. This will yield the number of pixels per cm, which is required as input to measure area.
+
+Model inference supports both CPU and GPU. However, the requirements.txt specifies the CPU version of PyTorch. If you wish to speed up inference please install the appropriate version of PyTorch with CUDA support in your virtual environment: https://pytorch.org/get-started/locally/
+
+
+<h4>Image requirements</h4>
+
+Images should be on a white/light coloured background such as a piece of paper or light pad. A camera of at least 10 MP is required. A typical phone can produce images of sufficient resolution. Please use the test image (test.JPG) as an example.
 
 <h4> Installation </h4>
 
-For Those who are unfamilar with python, I'll be including the basics of creating a python virtual envionment and installing requirements.
+For Those who are unfamilar with python, I'll be including the basics of creating a python virtual envionment and installing requirements. It isn't a comprehensive guide and if you have any issues I recomended reading the relavent docs.
+Conda: https://docs.conda.io/projects/conda/en/stable/user-guide/tasks/manage-environments.html
+Python venv: https://docs.python.org/3/library/venv.html
+
 
 <h5>1. Clone repository: </h5>
 
