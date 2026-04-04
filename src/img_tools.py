@@ -209,13 +209,13 @@ def frond_counts_with_ws(bmap):
     return frond_num, bmap2
 
 
-def positive_percentage(bmap):
+def frond_area(bmap, cm):
     '''
-    Go through array and count number of positive pixels then
-    divide by total number of pixels.
+    Calculates frond area based on pixels per cm.
 
     Arguments:
         bmap (numpy array): Binary map returned from CNN.
+        cm (int): pixels per centimerter.
 
     Returns:
         pos_per (float): Number of positive pixels.
@@ -224,18 +224,8 @@ def positive_percentage(bmap):
     num = np.count_nonzero(bmap==255)
     total = bmap.size
     pos_per = num/total
-
-    return pos_per
-
-
-def calculate_area(cm, pos_per, bmap):
-    '''
-    Take how many pixels are in a cm (measured in imagej)
-    and calculate the total area and frond area.
-
-    '''
-    total = (bmap.shape[0]/cm) * (bmap.shape[1]/cm)
-    frond_area = total * pos_per
+    total_cm = (bmap.shape[0]/cm) * (bmap.shape[1]/cm)
+    frond_area = total_cm * pos_per
 
     return frond_area
 
