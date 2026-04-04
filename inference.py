@@ -1,12 +1,11 @@
 import cv2
 import numpy as np
 from src.cnn_tools import UNet, InferenceDataset, get_predictions
-from src.img_tools import frond_counts, frond_counts_with_ws
-import torch
+from src.img_tools import frond_counts, frond_counts_with_ws, frond_area
 from torch.utils.data import DataLoader
+import torch
 import os, tempfile
 from art import *
-
 art = r"""                 
 .____                              ____   ____.__       .__                          
 |    |    ____   _____   ____ _____\   \ /   /|__| _____|__| ____   ____       
@@ -36,8 +35,38 @@ def get_user_img():
             print(f'File found at {img_path} but is either not an image or not a supported format.')
             continue
 
-        print(f'Image of size {img.shape} detected. Moving to resizing.')
-        return img, img_path
+        print(f'Image of size {img.shape} detected.')
+
+        while True:
+            cm_input = input('Do you want to calculate duckweed area? (y/n):').lower().strip()
+
+            if cm_input == 'y':
+
+                while True:
+                    cm_len = input('Please input number of pixels per centimetre (to the nearest int):')
+
+                    try:
+                        cm_len = int(cm_len)
+                        break
+
+                    except ValueError:
+                        print('Invalid number. Please enter an integer.')
+                        continue
+                break
+
+            elif cm_input == 'n':
+                print('Only producing semantic segmentation and counting fronds.')
+                cm_len = None
+                break
+
+            else:
+                print('Please enter a valid input.')
+                continue
+
+        if cm_len:
+            return img, img_path, int(cm_len)
+        else:
+            return img, img_path, None
 
 # ----------------------------------------------------------- #
 
@@ -171,6 +200,8 @@ def predict(padded_img, img_path, model=UNet(), patch_size=256):
 
     return f'{save_path}/{img_name}_predicted_bmap.tif', save_path, img_name
 
+
+
 # ----------------------------------------------------------- #
 
 def frond_counting(predicted_path, save_path, img_name):
@@ -180,9 +211,23 @@ def frond_counting(predicted_path, save_path, img_name):
     tprint(f'{str(frond_num)}     fronds!')
     cv2.imwrite(f'{save_path}/{img_name}_counted.tif', counted_img)
 
+
+# ----------------------------------------------------------- #
+
+def calculate_area(img_path, cm_len):
+    '''
+    '''
+    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    frond_space = frond_area(img, cm_len)
+
+    print('Frond area:', round(frond_space, 2), 'cm\u00b2')
         
-img, img_path = get_user_img()
+img, img_path, cm_len = get_user_img()
 padded_img = pad_img(img)
 predicted_path, save_path, img_name = predict(padded_img, img_path)
 frond_counting(predicted_path, save_path, img_name)
+if cm_len:
+    calculate_area(predicted_path, cm_len)
+else:
+    pass
 
