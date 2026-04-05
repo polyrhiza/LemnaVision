@@ -233,8 +233,9 @@ class Up(nn.Module):
     def forward(self, x, skip):
         x = self.up(x)
         x = torch.cat([skip, x], dim=1)
+        x = self.conv(x)
 
-        return self.conv(x)
+        return x
     
 
 class OutConv(nn.Module):
@@ -244,7 +245,8 @@ class OutConv(nn.Module):
         self.conv = nn.Conv2d(inChannels, outChannels, kernel_size=1)
     
     def forward(self, x):
-        return self.conv(x)
+        x = self.conv(x)
+        return x
     
 
 ##############################
