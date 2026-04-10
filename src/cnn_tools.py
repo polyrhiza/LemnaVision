@@ -71,7 +71,11 @@ def get_predictions(logits, threshold = 0.5, type='segmentation', output='numpy'
         raise ValueError(f'type can be set to "segmentation" or "distance". Instead recieved "{type}".')
 
     if output == 'numpy':
-        return preds.cpu().numpy().astype(np_dtype)
+        preds = preds.cpu().numpy().astype(np_dtype)
+        if type == 'segmentation':
+            return preds.squeeze() * 255
+        if type == 'distance':
+            return preds.squeeze()
     elif output == 'tensor':
         return preds.to(torch_dtype)
     else:

@@ -156,7 +156,6 @@ def predict(padded_img, img_path, model=UNet(), patch_size=256):
         )
 
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        model = model
         model.load_state_dict(torch.load('./weights/weights.pth', map_location=device))
         model.eval()
         model.to(device)
@@ -170,8 +169,7 @@ def predict(padded_img, img_path, model=UNet(), patch_size=256):
                 img = img.to(device)
                 seg, dist = model(img)
 
-                preds = get_predictions(seg, threshold=0.8)
-                p = (preds.squeeze() * 255.0).astype(np.uint8)
+                p = get_predictions(seg, threshold=0.8)
                 
                 pred_path = os.path.dirname(path)
                 pred_path = f'{pred_path}/{img_name}_pred_{num}.tif'
