@@ -43,7 +43,7 @@ def blur_augmentation(img, p=0.5):
 
 
 
-def get_predictions(logits, threshold = 0.5, type='segmentation', output='numpy'):
+def get_predictions(inputs, threshold = 0.5, type='segmentation', output='numpy'):
     '''
     Function that converts predictions to binary maps.
 
@@ -59,13 +59,12 @@ def get_predictions(logits, threshold = 0.5, type='segmentation', output='numpy'
                                Default is segmentation.
     '''
 
-    probs = torch.sigmoid(logits)
-
     if type == 'segmentation':
+        probs = torch.sigmoid(inputs)
         preds = (probs > threshold)
         np_dtype, torch_dtype = 'uint8', torch.uint8
     elif type == 'distance':
-        preds = probs
+        preds = inputs
         np_dtype, torch_dtype = 'float32', torch.float32
     else:
         raise ValueError(f'type can be set to "segmentation" or "distance". Instead recieved "{type}".')
