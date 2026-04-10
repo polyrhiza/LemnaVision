@@ -43,24 +43,39 @@ def blur_augmentation(img, p=0.5):
 
 
 
-def get_predictions(logits, threshold = 0.5, output='numpy'):
+def get_predictions(logits, threshold = 0.5, type='segmentation', output='numpy'):
     '''
     Function that converts predictions to binary maps.
 
     Args:
-        logits: Logit prediction returned from model().
-        threshold: Probability threshold. Default is 0.5.
+        logits (tensor): Logit prediction returned from model().
+        threshold (float): Probability threshold. Default is 0.5.
+        type (string): Whether passing binary segmentation map or distance map
         output (numpy array, tensor): Dtype to return. Default is numpy.
+
+    Returns:
+        preds (array, tensor): If type == 'segmentation' returns a binary segmenataion map.
+                               If type == 'distance' returns a sigmoided distance map.
+                               Default is segmentation.
     '''
+
     probs = torch.sigmoid(logits)
-    preds = (probs > threshold)
+
+    if type == 'segmentation':
+        preds = (probs > threshold)
+        np_dtype, torch_dtype = 'uint8', torch.uint8
+    elif type == 'distance':
+        preds = probs
+        np_dtype, torch_dtype = 'float32', torch.float32
+    else:
+        raise ValueError(f'type can be set to "segmentation" or "distance". Instead recieved "{type}".')
 
     if output == 'numpy':
-        return preds.cpu().numpy().astype('uint8')
+        return preds.cpu().numpy().astype(np_dtype)
     elif output == 'tensor':
-        return preds.to(torch.uint8)
+        return preds.to(torch_dtype)
     else:
-        raise ValueError('Unknown output type: {output}')
+        raise ValueError(f'Unknown output type: {output}')
     
 
 ##############################
