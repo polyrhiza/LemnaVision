@@ -5,6 +5,7 @@ from src.img_tools import frond_counts, frond_counts_with_ws, frond_area
 from torch.utils.data import DataLoader
 import torch
 import os, tempfile
+import datetime
 from art import *
 art = r"""                 
 .____                              ____   ____.__       .__                          
@@ -221,11 +222,16 @@ def calculate_area(img_path, cm_len):
     frond_space = frond_area(img, cm_len)
 
     print('Frond area:', round(frond_space, 2), 'cm\u00b2')
-        
+
+# ----------------------------------------------------------- #
+
 img, img_path, cm_len = get_user_img()
+start_time = datetime.datetime.now()
 padded_img = pad_img(img)
 predicted_path, save_path, img_name = predict(padded_img, img_path)
 frond_counting(predicted_path, save_path, img_name)
+end_counting = datetime.datetime.now() - start_time
+print(end_counting)
 if cm_len:
     calculate_area(predicted_path, cm_len)
 else:
