@@ -76,6 +76,7 @@ def frond_counts(bmap):
         frond_num (int): Number of fronds found.
         bmap2 (numpy array): Array (x, y, 3) with fronds labeled.
     '''
+
     bmap = bmap.astype(np.uint8) if bmap.dtype != np.uint8 else bmap
     bmap = (bmap*255).astype(np.uint8) if bmap.max() == 1 else bmap
 
@@ -131,7 +132,6 @@ def frond_counts_with_ws(bmap):
     performing connected component analysis is the same
     with or without water shedding.
 
-    
     Arguments
         bmap (numpy array): Binary map returned from CNN.
 
@@ -229,6 +229,55 @@ def frond_area(bmap, cm):
     frond_area = total_cm * pos_per
 
     return frond_area
+
+bmap = cv2.imread('../test_predicted_bmap.tif', cv2.IMREAD_GRAYSCALE)
+cm = 20
+
+def avg_frond_area(bmap, cm):
+    '''
+    Method for calcualting average frond area
+
+    Arguments:
+        bmap (numpy array): Binary map returned from CNN.
+
+    Returns:
+         (float64): cm^2 average frond area.
+
+    '''
+    
+    bmap = bmap.astype(np.uint8) if bmap.dtype != np.uint8 else bmap
+    bmap = (bmap*255).astype(np.uint8) if bmap.max() == 1 else bmap
+
+    distmap = cv2.distanceTransform(
+            bmap,
+            cv2.DIST_L2,
+            cv2.DIST_MASK_PRECISE
+    )
+
+    _, sure_fg = cv2.threshold(
+            distmap,
+            0.2 * distmap.max(), # set fg threshold here
+            255,
+            0
+    )
+
+    sure_fg = np.uint8(sure_fg)
+
+    _, markers = cv2.connectedComponents(sure_fg)
+
+    frond_num = int(np.max(np.unique(markers)))
+
+    frond_pixel_totals = []
+    for frond in range(1, frond_num +1):
+        frond_pixel_totals.append(np.sum(markers == np.int32(frond)))
+
+    average_frond_pixels= sum(frond_pixel_totals) / len(frond_pixel_totals)
+
+    avg_frond_area = average_frond_pixels / cm**2
+
+
+    return avg_frond_area
+
 
 def pad_images(jpgPaths, bmapPaths=None, savePath=None, patchSize=256):
 
