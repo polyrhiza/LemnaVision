@@ -87,7 +87,7 @@ def frond_counts(bmap):
 
     _, sure_fg = cv2.threshold(
             distmap,
-            0.2 * distmap.max(),
+            0.2 * distmap.max(), # set fg threshold here
             255,
             0
     )
@@ -127,9 +127,10 @@ def frond_counts(bmap):
 def frond_counts_with_ws(bmap):
     '''
     Counts the number of fronds with watershedding.
-    Inference from the U-Net model is accurate enough
-    that watershedding for frond counts is uneccessary.
-    However, the function is here if needed.
+    This generally uneeded as the thresholding before
+    performing connected component analysis is the same
+    with or without water shedding.
+
     
     Arguments
         bmap (numpy array): Binary map returned from CNN.
