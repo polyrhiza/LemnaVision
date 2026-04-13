@@ -248,6 +248,17 @@ def avg_frond_area(bmap, cm):
     bmap = bmap.astype(np.uint8) if bmap.dtype != np.uint8 else bmap
     bmap = (bmap*255).astype(np.uint8) if bmap.max() == 1 else bmap
 
+    kernel = np.ones(
+        (3,3),
+        np.uint8
+    )
+
+    sure_bg = cv2.dilate(
+        bmap,
+        kernel,
+        iterations=3
+    )
+
     distmap = cv2.distanceTransform(
             bmap,
             cv2.DIST_L2,
@@ -265,11 +276,19 @@ def avg_frond_area(bmap, cm):
 
     _, markers = cv2.connectedComponents(sure_fg)
 
-    frond_num = int(np.max(np.unique(markers)))
+    unknown = cv2.subtract(sure_bg, sure_fg)
+
+    labels = cv2.watershed(
+    cv2.cvtColor(bmap, cv2.COLOR_GRAY2BGR),
+    markers
+    )
+
+    # minus 1 required because 1 is background after watershed
+    frond_num = max(np.unique(labels)) - 1
 
     frond_pixel_totals = []
-    for frond in range(1, frond_num +1):
-        frond_pixel_totals.append(np.sum(markers == np.int32(frond)))
+    for frond in range(2, frond_num + 1):
+        frond_pixel_totals.append(np.sum((labels==frond) & (bmap > 0)))
 
     average_frond_pixels= sum(frond_pixel_totals) / len(frond_pixel_totals)
 
