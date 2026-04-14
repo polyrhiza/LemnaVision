@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
+import pandas as pd
 from src.cnn_tools import UNet, InferenceDataset, get_predictions
-from src.img_tools import frond_counts, frond_counts_with_ws, frond_area
+from src.img_tools import frond_counts, frond_counts_with_ws, frond_area, avg_frond_area
 from torch.utils.data import DataLoader
 import torch
 import os, tempfile
@@ -39,7 +40,7 @@ def get_user_img():
         print(f'Image of size {img.shape} detected.')
 
         while True:
-            cm_input = input('Do you want to calculate duckweed area? (y/n):').lower().strip()
+            cm_input = input('Do you want to calculate total duckweed area and average frond size? (y/n):').lower().strip()
 
             if cm_input == 'y':
 
@@ -53,6 +54,7 @@ def get_user_img():
                     except ValueError:
                         print('Invalid number. Please enter an integer.')
                         continue
+ 
                 break
 
             elif cm_input == 'n':
@@ -63,6 +65,7 @@ def get_user_img():
             else:
                 print('Please enter a valid input.')
                 continue
+        
 
         if cm_len:
             return img, img_path, int(cm_len)
@@ -210,6 +213,8 @@ def frond_counting(predicted_path, save_path, img_name):
     tprint(f'{str(frond_num)}     fronds!')
     cv2.imwrite(f'{save_path}/{img_name}_counted.tif', counted_img)
 
+    return frond_num
+
 
 # ----------------------------------------------------------- #
 
@@ -218,8 +223,13 @@ def calculate_area(img_path, cm_len):
     '''
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
     frond_space = frond_area(img, cm_len)
+    avg_frond = avg_frond_area(img, cm_len)
 
-    print('Frond area:', round(frond_space, 2), 'cm\u00b2')
+    print('Total duckweed area:', round(frond_space, 2), 'cm\u00b2')
+    print('Average frond area:', round(avg_frond, 2), 'cm\u00b2')
+
+    return frond_space, avg_frond
+
 
 # ----------------------------------------------------------- #
 
@@ -227,11 +237,18 @@ img, img_path, cm_len = get_user_img()
 start_time = datetime.datetime.now()
 padded_img = pad_img(img)
 predicted_path, save_path, img_name = predict(padded_img, img_path)
-frond_counting(predicted_path, save_path, img_name)
+frond_num = frond_counting(predicted_path, save_path, img_name)
 end_counting = datetime.datetime.now() - start_time
-print(end_counting)
+print('Time taken:', end_counting)
 if cm_len:
-    calculate_area(predicted_path, cm_len)
+    frond_space, avg_frond = calculate_area(predicted_path, cm_len)
+    df = pd.DataFrame({
+        'img': os.path.basename(predicted_path),
+        'frond_num': [frond_num],
+        'total_dw_area (cm2)': [frond_space],
+        'avg_frond_area (cm2)': [avg_frond]
+    })
+    df.to_csv(f'{os.path.basename(predicted_path)}.csv')
 else:
     pass
 
