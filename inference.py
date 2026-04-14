@@ -218,15 +218,25 @@ def frond_counting(predicted_path, save_path, img_name):
 
 # ----------------------------------------------------------- #
 
-def calculate_area(img_path, cm_len):
+def calculate_area(pred_path, org_img, cm_len):
     '''
     '''
-    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
-    frond_space = frond_area(img, cm_len)
-    avg_frond = avg_frond_area(img, cm_len)
+    img = cv2.imread(pred_path, cv2.IMREAD_GRAYSCALE)
+    frond_space = round(frond_area(img, cm_len), 2)
+    avg_frond = round(avg_frond_area(img, cm_len), 2)
+    file_name, ext = os.path.splitext(org_img)
+    print(file_name)
 
-    print('Total duckweed area:', round(frond_space, 2), 'cm\u00b2')
-    print('Average frond area:', round(avg_frond, 2), 'cm\u00b2')
+    print('Total duckweed area:', frond_space, 2, 'cm\u00b2')
+    print('Average frond area:', avg_frond, 2, 'cm\u00b2')
+
+    df = pd.DataFrame({
+        'img': os.path.basename(org_img),
+        'frond_num': [frond_num],
+        'total_dw_area_cm2': [frond_space],
+        'avg_frond_area_cm2': [avg_frond]
+        })
+    df.to_csv(f'{file_name}.csv', index=False)
 
     return frond_space, avg_frond
 
@@ -241,14 +251,7 @@ frond_num = frond_counting(predicted_path, save_path, img_name)
 end_counting = datetime.datetime.now() - start_time
 print('Time taken:', end_counting)
 if cm_len:
-    frond_space, avg_frond = calculate_area(predicted_path, cm_len)
-    df = pd.DataFrame({
-        'img': os.path.basename(predicted_path),
-        'frond_num': [frond_num],
-        'total_dw_area (cm2)': [frond_space],
-        'avg_frond_area (cm2)': [avg_frond]
-    })
-    df.to_csv(f'{os.path.basename(predicted_path)}.csv')
+    frond_space, avg_frond = calculate_area(predicted_path, img_path, cm_len)
 else:
     pass
 
