@@ -128,7 +128,7 @@ def frond_counts(bmap):
 def frond_counts_with_ws(bmap):
     '''
     Counts the number of fronds with watershedding.
-    This generally uneeded as the thresholding before
+    This is generally uneeded as the thresholding before
     performing connected component analysis is the same
     with or without water shedding.
 
