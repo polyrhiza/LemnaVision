@@ -202,8 +202,6 @@ def predict(padded_img, img_path, model=UNet(), patch_size=256):
 
     return f'{save_path}/{img_name}_predicted_bmap.tif', save_path, img_name
 
-
-
 # ----------------------------------------------------------- #
 
 def frond_counting(predicted_path, save_path, img_name):
@@ -211,10 +209,11 @@ def frond_counting(predicted_path, save_path, img_name):
     img = cv2.imread(predicted_path, cv2.IMREAD_GRAYSCALE)
     frond_num, counted_img = frond_counts(img)
     tprint(f'{str(frond_num)}     fronds!')
+
+
     cv2.imwrite(f'{save_path}/{img_name}_counted.tif', counted_img)
 
     return frond_num
-
 
 # ----------------------------------------------------------- #
 
@@ -224,11 +223,10 @@ def calculate_area(pred_path, org_img, cm_len):
     img = cv2.imread(pred_path, cv2.IMREAD_GRAYSCALE)
     frond_space = round(frond_area(img, cm_len), 2)
     avg_frond = round(avg_frond_area(img, cm_len), 2)
-    file_name, ext = os.path.splitext(org_img)
-    print(file_name)
+    print(f'Area Calculations For Image: {org_img}')
 
-    print('Total duckweed area:', frond_space, 2, 'cm\u00b2')
-    print('Average frond area:', avg_frond, 2, 'cm\u00b2')
+    print('Total duckweed area:', frond_space, 'cm\u00b2')
+    print('Average frond area:', avg_frond, 'cm\u00b2')
 
     df = pd.DataFrame({
         'img': os.path.basename(org_img),
@@ -236,22 +234,72 @@ def calculate_area(pred_path, org_img, cm_len):
         'total_dw_area_cm2': [frond_space],
         'avg_frond_area_cm2': [avg_frond]
         })
-    df.to_csv(f'{file_name}.csv', index=False)
+    df.to_csv(f'{pred_path}.csv', index=False)
 
     return frond_space, avg_frond
+
+# ----------------------------------------------------------- #
+
+def save_area_img(frond_space, avg_frond, frond_num, predicted_path):
+    ''' Take the details produced for total frond area, avg frond
+    area and frond number and return an image with these numbers
+    placed at the bottom of the image.
+    '''
+    img = cv2.imread(predicted_path, cv2.IMREAD_GRAYSCALE)
+    h, w = img.shape[:2]
+
+    text = f'Fronds: {frond_num} -- Frond Coverage: {frond_space} cm2 -- Average Frond Area: {avg_frond} cm2'
+    colour = (255, 255, 255)
+    size = 5.0
+    font = cv2.FONT_HERSHEY_PLAIN
+    thickness = 10
+
+    (text_w, text_h), baseline = cv2.getTextSize(
+        text,
+        fontScale=size,
+        fontFace=font,
+        thickness=thickness
+        )
+
+    x = (w - text_w) // 2
+    y = h - 30
+
+    cv2.putText(img,
+                text,
+                (x, y),
+                color=colour,
+                fontScale=size,
+                lineType=8,
+                fontFace=font,
+                thickness=thickness
+                )
+
+    path, filename = os.path.split(predicted_path)
+    file_name, _ = os.path.splitext(filename)
+
+    cv2.imwrite(f'{path}/{file_name}_area_details.tif', img)
 
 
 # ----------------------------------------------------------- #
 
+start_time = datetime.datetime.now() # time start
+
 img, img_path, cm_len = get_user_img()
-start_time = datetime.datetime.now()
 padded_img = pad_img(img)
 predicted_path, save_path, img_name = predict(padded_img, img_path)
 frond_num = frond_counting(predicted_path, save_path, img_name)
-end_counting = datetime.datetime.now() - start_time
-print('Time taken:', end_counting)
+
+frond_end_counting = datetime.datetime.now() - start_time # time end for frond counting
+print('Time Take For Frond Counting:', frond_end_counting, '\n')
+
+
 if cm_len:
     frond_space, avg_frond = calculate_area(predicted_path, img_path, cm_len)
+    save_area_img(frond_space, avg_frond, frond_num, predicted_path)
 else:
     pass
 
+area_end_calculation = datetime.datetime.now() - start_time # time to calculate fronds numbers + area calcs
+print(f'\nTotal Time Taken: {area_end_calculation}')
+
+ 
