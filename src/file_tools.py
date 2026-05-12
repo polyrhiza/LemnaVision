@@ -114,8 +114,19 @@ def stratified_train_test_split(jpgPaths, bmapPaths, split = 0.8, seed=42):
 
     jpgTrain = jpgTrain[perm]
     bmapTrain = bmapTrain[perm]
+
+    # getting pixel numbers
+    total_pixels = 0
+    dw_pixels = 0
+    background = len(bmapBackground) * 65536
+    for path in bmapPlants:
+        bmap = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        total_pixels += bmap.size
+        dw_pixels += np.count_nonzero(bmap)
     
-    return jpgTrain.tolist(), bmapTrain.tolist(), jpgTest.tolist(), bmapTest.tolist()
+    pixels = [total_pixels, background, dw_pixels]
+    
+    return jpgTrain.tolist(), bmapTrain.tolist(), jpgTest.tolist(), bmapTest.tolist(), pixels
     
 
 
