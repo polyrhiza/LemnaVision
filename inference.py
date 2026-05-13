@@ -119,7 +119,8 @@ def predict(padded_img, img_path, model=UNet(), patch_size=256):
         img = padded_img
 
         img_name, ext = os.path.splitext(os.path.basename(img_path))
-        save_path = os.path.dirname(os.path.abspath(img_path))
+        os.makedirs(f'{os.path.dirname(os.path.abspath(img_path))}/outputs/{img_name}', exist_ok=True)
+        save_path = f'{os.path.dirname(os.path.abspath(img_path))}/outputs/{img_name}'
 
         h, w , c = img.shape
 
@@ -222,7 +223,7 @@ def calculate_area(pred_path, org_img, cm_len):
     '''
     img = cv2.imread(pred_path, cv2.IMREAD_GRAYSCALE)
     frond_space = round(frond_area(img, cm_len), 2)
-    avg_frond = round(avg_frond_area(img, cm_len), 2)
+    avg_frond = round(avg_frond_area(img, cm_len), 4)
     print(f'Area Calculations For Image: {org_img}')
 
     print('Total duckweed area:', frond_space, 'cm\u00b2')
@@ -234,7 +235,10 @@ def calculate_area(pred_path, org_img, cm_len):
         'total_dw_area_cm2': [frond_space],
         'avg_frond_area_cm2': [avg_frond]
         })
-    df.to_csv(f'{pred_path}.csv', index=False)
+    
+    path, file_name = os.path.split(pred_path)
+    name, _ = os.path.splitext(file_name) 
+    df.to_csv(f'{path}/{name}.csv', index=False)
 
     return frond_space, avg_frond
 
