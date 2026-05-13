@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import pandas as pd
 from src.cnn_tools import UNet, InferenceDataset, get_predictions
-from src.img_tools import frond_counts, frond_counts_with_ws, frond_area, avg_frond_area
+from src.img_tools import frond_counts, frond_area, avg_frond_area
 from torch.utils.data import DataLoader
 import torch
 import os, tempfile
