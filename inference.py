@@ -201,55 +201,44 @@ def predict(padded_img, img_path, model=UNet(), patch_size=256):
         print(f'Inference complete!')
         print(f'Lemnaceae binary map saved to {save_path}.')
 
-    return f'{save_path}/{img_name}_predicted_bmap.tif', save_path, img_name
+    return f'{save_path}/{img_name}_predicted_bmap.tif'
 
 # ----------------------------------------------------------- #
 
-def frond_counting(predicted_path, save_path, img_name):
+def frond_counting(pred_path):
     print('Starting frond counting!')
-    img = cv2.imread(predicted_path, cv2.IMREAD_GRAYSCALE)
+
+    img = cv2.imread(pred_path, cv2.IMREAD_GRAYSCALE)
     frond_num, counted_img = frond_counts(img)
+
     tprint(f'{str(frond_num)}     fronds!')
 
+    dirname = os.path.dirname(pred_path)
+    file_name = os.path.splitext(os.path.basename(pred_path))[0]
 
-    cv2.imwrite(f'{save_path}/{img_name}_counted.tif', counted_img)
+    cv2.imwrite(f'{dirname}/{file_name}_counted.tif', counted_img)
 
     return frond_num
 
 # ----------------------------------------------------------- #
 
-def calculate_area(pred_path, org_img, cm_len):
+def calculate_area(pred_path, cm_len):
     '''
     '''
+     # getting original image name
+    splitted = os.path.splitext(os.path.basename(pred_path))[0].split('_')
+    org_file_name = '_'.join(splitted[:-1])
+
+    # load img and calculate area measurments
     img = cv2.imread(pred_path, cv2.IMREAD_GRAYSCALE)
     frond_space = round(frond_area(img, cm_len), 2)
     avg_frond = round(avg_frond_area(img, cm_len), 4)
-    print(f'Area Calculations For Image: {org_img}')
+    print(f'Area Calculations For Image: {org_file_name}')
 
     print('Total duckweed area:', frond_space, 'cm\u00b2')
     print('Average frond area:', avg_frond, 'cm\u00b2')
 
-    df = pd.DataFrame({
-        'img': os.path.basename(org_img),
-        'frond_num': [frond_num],
-        'total_dw_area_cm2': [frond_space],
-        'avg_frond_area_cm2': [avg_frond]
-        })
-    
-    path, file_name = os.path.split(pred_path)
-    name, _ = os.path.splitext(file_name) 
-    df.to_csv(f'{path}/{name}.csv', index=False)
-
-    return frond_space, avg_frond
-
-# ----------------------------------------------------------- #
-
-def save_area_img(frond_space, avg_frond, frond_num, predicted_path):
-    ''' Take the details produced for total frond area, avg frond
-    area and frond number and return an image with these numbers
-    placed at the bottom of the image.
-    '''
-    img = cv2.imread(predicted_path, cv2.IMREAD_GRAYSCALE)
+    # saving img and csv
     h, w = img.shape[:2]
 
     text = f'Fronds: {frond_num} -- Frond Coverage: {frond_space} cm2 -- Average Frond Area: {avg_frond} cm2'
@@ -278,11 +267,20 @@ def save_area_img(frond_space, avg_frond, frond_num, predicted_path):
                 thickness=thickness
                 )
 
-    path, filename = os.path.split(predicted_path)
-    file_name, _ = os.path.splitext(filename)
+    cv2.imwrite(f'{os.path.dirname(pred_path)}/{org_file_name}_area_details.tif', img)
 
-    cv2.imwrite(f'{path}/{file_name}_area_details.tif', img)
+    df = pd.DataFrame({
+        'img': org_file_name,
+        'frond_num': [frond_num],
+        'total_dw_area_cm2': [frond_space],
+        'avg_frond_area_cm2': [avg_frond]
+        })
+    
+    df.to_csv(f'{os.path.dirname(pred_path)}/{org_file_name}.csv', index=False)
 
+    return frond_space, avg_frond
+
+# ----------------------------------------------------------- #
 
 # ----------------------------------------------------------- #
 
@@ -290,16 +288,15 @@ start_time = datetime.datetime.now() # time start
 
 img, img_path, cm_len = get_user_img()
 padded_img = pad_img(img)
-predicted_path, save_path, img_name = predict(padded_img, img_path)
-frond_num = frond_counting(predicted_path, save_path, img_name)
+pred_path = predict(padded_img, img_path)
+frond_num = frond_counting(pred_path)
 
 frond_end_counting = datetime.datetime.now() - start_time # time end for frond counting
 print('Time Take For Frond Counting:', frond_end_counting, '\n')
 
 
 if cm_len:
-    frond_space, avg_frond = calculate_area(predicted_path, img_path, cm_len)
-    save_area_img(frond_space, avg_frond, frond_num, predicted_path)
+    frond_space, avg_frond = calculate_area(pred_path, cm_len)
 else:
     pass
 
