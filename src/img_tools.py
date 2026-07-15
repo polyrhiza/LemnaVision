@@ -305,7 +305,7 @@ def pad_images(jpgPaths, bmapPaths=None, savePath=None, patchSize=256):
     
     jpgs: List of image arrays of size x, y, 3
     bmaps: List of binary map arrays of size x, y
-    savePath
+    savePath:
     patchsize: Size you want to patch. Default is 256.
 
     Returns: Paths to newly padded images and binary maps.
@@ -363,6 +363,11 @@ def pad_images(jpgPaths, bmapPaths=None, savePath=None, patchSize=256):
         paddedJpgPaths.append(jpgPath)
         if bmapPaths != None:
             paddedBmapPaths.append(bmapPath)
+        
+        print('---------------------------------\n',
+              f'Padded {jpgPaths[i]}\n',
+              f'Padded {bmapPaths[i]}\n' if bmapPaths != None else '---------------------------------\n',
+              '---------------------------------\n')
 
     if bmapPaths != None:
         return paddedJpgPaths, paddedBmapPaths
@@ -371,7 +376,7 @@ def pad_images(jpgPaths, bmapPaths=None, savePath=None, patchSize=256):
 
 
 
-def patching(jpgPaths, savePath, bmapPaths=None, patchSize=256):
+def patching(jpgPaths, bmapPaths=None, savePath=None, patchSize=256):
 
     '''
     Method for patching training data to desired size.
@@ -423,6 +428,11 @@ def patching(jpgPaths, savePath, bmapPaths=None, patchSize=256):
                 coords.append((x, y))
 
                 num += 1
+        print('---------------------------------\n',
+              f'Patched {jpgPaths[i]}\n',
+              f'Patched {bmapPaths[i]}\n' if bmapPaths != None else '---------------------------------\n',
+              '---------------------------------\n')
+
 
     if bmapPaths != None:
         return jpgPatchPaths, bmapPatchPaths, coords
